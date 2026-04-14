@@ -1,0 +1,58 @@
+.cfg-label {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.cfg-label-green {
+    background: #e7f7ed;
+    color: #1e7a39;
+    border: 1px solid #b7e4c7;
+}
+
+.cfg-label-red {
+    background: #fdecea;
+    color: #b42318;
+    border: 1px solid #f5c2c7;
+}
+
+.cfg-flag {
+    color: #b42318;
+    font-weight: 700;
+    margin-left: 6px;
+    font-size: 20px;
+}
+
+.cfg-copy-ip {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    width: 26px;
+    padding: 0 !important;
+}
+
+.cfg-copy-ip .dashicons {
+    line-height: 1;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+}
+
+.wp-list-table .column-visit_count {
+    width: 80px;
+}
+
+.wp-list-table .column-country {
+    width: 80px;
+}
+
+.wp-list-table .column-is_excluded {
+    width: 80px;
+}
+
+.wp-list-table .column-exclude_action {
+    width: 80px;
+}
