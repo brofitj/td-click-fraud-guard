@@ -619,167 +619,168 @@ if (is_admin()) {
     if (!class_exists('WP_List_Table')) {
         require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
     }
-class CFG_Click_Log_Table extends WP_List_Table {
-    public $deleted_count = 0;
-    public $excluded_map = array();
-    public $excluded_filter = 'all';
-    public $repeat_threshold = 0;
-    public $flag_filter = 'all';
+    
+    class CFG_Click_Log_Table extends WP_List_Table {
+        public $deleted_count = 0;
+        public $excluded_map = array();
+        public $excluded_filter = 'all';
+        public $repeat_threshold = 0;
+        public $flag_filter = 'all';
 
-    public function __construct() {
-        parent::__construct(array(
-            'singular' => 'log',
-            'plural' => 'logs',
-            'ajax' => false,
-        ));
-    }
+        public function __construct() {
+            parent::__construct(array(
+                'singular' => 'log',
+                'plural' => 'logs',
+                'ajax' => false,
+            ));
+        }
 
-    public function get_columns() {
-        return array(
-            'cb' => '<input type="checkbox" />',
-            'created_at' => 'Time',
-            'last_seen' => 'Last Seen',
-            'ip' => 'IP',
-            'visit_count' => 'Visits',
-            'country' => 'Country',
-            'gclid' => 'GCLID',
-            'landing_url' => 'URL',
-            'is_excluded' => 'Status',
-            'exclude_action' => 'Action',
-        );
-    }
+        public function get_columns() {
+            return array(
+                'cb' => '<input type="checkbox" />',
+                'created_at' => 'Time',
+                'last_seen' => 'Last Seen',
+                'ip' => 'IP',
+                'visit_count' => 'Visits',
+                'country' => 'Country',
+                'gclid' => 'GCLID',
+                'landing_url' => 'URL',
+                'is_excluded' => 'Status',
+                'exclude_action' => 'Action',
+            );
+        }
 
-    protected function get_bulk_actions() {
-        return array(
-            'delete' => 'Hapus',
-        );
-    }
+        protected function get_bulk_actions() {
+            return array(
+                'delete' => 'Hapus',
+            );
+        }
 
-    protected function column_cb($item) {
-        return sprintf('<input type="checkbox" name="log_id[]" value="%d" />', (int)$item->id);
-    }
+        protected function column_cb($item) {
+            return sprintf('<input type="checkbox" name="log_id[]" value="%d" />', (int)$item->id);
+        }
 
-    public function column_default($item, $column_name) {
-        switch ($column_name) {
-            case 'created_at':
-                return esc_html(CFG_Click_Fraud_Guard::format_wib($item->created_at));
-            case 'last_seen':
-                return esc_html(CFG_Click_Fraud_Guard::format_wib($item->last_seen));
-            case 'ip':
-                return esc_html($item->ip) . ' <button type="button" class="button button-small cfg-copy-ip" data-ip="' . esc_attr($item->ip) . '" aria-label="Copy IP"><span class="dashicons dashicons-admin-page" aria-hidden="true"></span></button>';
-            case 'visit_count':
-                $count = (int)$item->visit_count;
-                $flag = $count > $this->repeat_threshold ? '<span class="cfg-flag">⚑</span>' : '';
-                return esc_html($count) . $flag;
-            case 'landing_url':
-                return '<code>' . esc_html($item->landing_url) . '</code>';
-            case 'is_excluded':
-                $is_excluded = isset($this->excluded_map[$item->ip]) && $this->excluded_map[$item->ip];
-                $label = $is_excluded ? 'Excluded' : 'Not Excluded';
-                $label_class = $is_excluded ? 'cfg-label cfg-label-red' : 'cfg-label cfg-label-green';
-                return '<span class="' . esc_attr($label_class) . '">' . esc_html($label) . '</span>';
-            case 'exclude_action':
-                $is_excluded = isset($this->excluded_map[$item->ip]) && $this->excluded_map[$item->ip];
-                $toggle = $is_excluded ? 0 : 1;
-                $action_label = $is_excluded ? 'Unmark' : 'Mark';
-                $url = add_query_arg(
-                    array(
-                        'action' => 'cfg_toggle_excluded',
-                        'ip' => $item->ip,
-                        'new' => $toggle,
-                    ),
-                    admin_url('admin-post.php')
-                );
-                $url = wp_nonce_url($url, 'cfg_toggle_excluded_' . md5($item->ip));
-                return '<a class="button button-small" href="' . esc_url($url) . '">' . esc_html($action_label) . '</a>';
-            default:
-                return esc_html($item->$column_name);
+        public function column_default($item, $column_name) {
+            switch ($column_name) {
+                case 'created_at':
+                    return esc_html(CFG_Click_Fraud_Guard::format_wib($item->created_at));
+                case 'last_seen':
+                    return esc_html(CFG_Click_Fraud_Guard::format_wib($item->last_seen));
+                case 'ip':
+                    return esc_html($item->ip) . ' <button type="button" class="button button-small cfg-copy-ip" data-ip="' . esc_attr($item->ip) . '" aria-label="Copy IP"><span class="dashicons dashicons-admin-page" aria-hidden="true"></span></button>';
+                case 'visit_count':
+                    $count = (int)$item->visit_count;
+                    $flag = $count > $this->repeat_threshold ? '<span class="cfg-flag">⚑</span>' : '';
+                    return esc_html($count) . $flag;
+                case 'landing_url':
+                    return '<code>' . esc_html($item->landing_url) . '</code>';
+                case 'is_excluded':
+                    $is_excluded = isset($this->excluded_map[$item->ip]) && $this->excluded_map[$item->ip];
+                    $label = $is_excluded ? 'Excluded' : 'Not Excluded';
+                    $label_class = $is_excluded ? 'cfg-label cfg-label-red' : 'cfg-label cfg-label-green';
+                    return '<span class="' . esc_attr($label_class) . '">' . esc_html($label) . '</span>';
+                case 'exclude_action':
+                    $is_excluded = isset($this->excluded_map[$item->ip]) && $this->excluded_map[$item->ip];
+                    $toggle = $is_excluded ? 0 : 1;
+                    $action_label = $is_excluded ? 'Unmark' : 'Mark';
+                    $url = add_query_arg(
+                        array(
+                            'action' => 'cfg_toggle_excluded',
+                            'ip' => $item->ip,
+                            'new' => $toggle,
+                        ),
+                        admin_url('admin-post.php')
+                    );
+                    $url = wp_nonce_url($url, 'cfg_toggle_excluded_' . md5($item->ip));
+                    return '<a class="button button-small" href="' . esc_url($url) . '">' . esc_html($action_label) . '</a>';
+                default:
+                    return esc_html($item->$column_name);
+            }
+        }
+
+        public function prepare_items() {
+            $per_page = 10;
+            $current_page = $this->get_pagenum();
+            $this->excluded_filter = isset($_GET['excluded']) ? sanitize_text_field(wp_unslash($_GET['excluded'])) : 'all';
+            if (!in_array($this->excluded_filter, array('all', 'excluded', 'not_excluded'), true)) {
+                $this->excluded_filter = 'all';
+            }
+            $this->flag_filter = isset($_GET['flagged']) ? sanitize_text_field(wp_unslash($_GET['flagged'])) : 'all';
+            if (!in_array($this->flag_filter, array('all', 'flagged', 'not_flagged'), true)) {
+                $this->flag_filter = 'all';
+            }
+            $settings = CFG_Click_Fraud_Guard::get_settings();
+            $this->repeat_threshold = max(1, (int)$settings['repeat_threshold']);
+            $total_items = CFG_Click_Fraud_Guard::get_logs_count($this->excluded_filter, $this->flag_filter, $this->repeat_threshold);
+
+            $this->set_pagination_args(array(
+                'total_items' => $total_items,
+                'per_page' => $per_page,
+            ));
+
+            $this->_column_headers = array($this->get_columns(), array(), array());
+            $this->items = CFG_Click_Fraud_Guard::get_logs($per_page, ($current_page - 1) * $per_page, $this->excluded_filter, $this->flag_filter, $this->repeat_threshold);
+            $ips = array();
+            foreach ($this->items as $item) {
+                $ips[] = $item->ip;
+            }
+            $this->excluded_map = CFG_Click_Fraud_Guard::get_excluded_map($ips);
+        }
+
+        protected function get_views() {
+            $current_excluded = $this->excluded_filter;
+            $current_flag = $this->flag_filter;
+            $base_url = admin_url('admin.php?page=click-fraud-guard-logs');
+            $views = array();
+
+            $count_all = CFG_Click_Fraud_Guard::get_logs_count('all', 'all', $this->repeat_threshold);
+            $count_excluded = CFG_Click_Fraud_Guard::get_logs_count('excluded', $current_flag, $this->repeat_threshold);
+            $count_not_excluded = CFG_Click_Fraud_Guard::get_logs_count('not_excluded', $current_flag, $this->repeat_threshold);
+            $count_flagged = CFG_Click_Fraud_Guard::get_logs_count($current_excluded, 'flagged', $this->repeat_threshold);
+            $count_not_flagged = CFG_Click_Fraud_Guard::get_logs_count($current_excluded, 'not_flagged', $this->repeat_threshold);
+
+            $views['all'] = sprintf(
+                '<a href="%s"%s>All <span class="count">(%d)</span></a>',
+                esc_url($base_url),
+                ($current_excluded === 'all' && $current_flag === 'all') ? ' class="current"' : '',
+                $count_all
+            );
+            $views['flagged'] = sprintf(
+                '<a href="%s"%s>Flagged <span class="count">(%d)</span></a>',
+                esc_url(add_query_arg(array('flagged' => 'flagged', 'excluded' => $current_excluded), $base_url)),
+                $current_flag === 'flagged' ? ' class="current"' : '',
+                $count_flagged
+            );
+            $views['not_flagged'] = sprintf(
+                '<a href="%s"%s>Not Flagged <span class="count">(%d)</span></a>',
+                esc_url(add_query_arg(array('flagged' => 'not_flagged', 'excluded' => $current_excluded), $base_url)),
+                $current_flag === 'not_flagged' ? ' class="current"' : '',
+                $count_not_flagged
+            );
+            $views['excluded'] = sprintf(
+                '<a href="%s"%s>Excluded <span class="count">(%d)</span></a>',
+                esc_url(add_query_arg(array('excluded' => 'excluded', 'flagged' => $current_flag), $base_url)),
+                $current_excluded === 'excluded' ? ' class="current"' : '',
+                $count_excluded
+            );
+            $views['not_excluded'] = sprintf(
+                '<a href="%s"%s>Not Excluded <span class="count">(%d)</span></a>',
+                esc_url(add_query_arg(array('excluded' => 'not_excluded', 'flagged' => $current_flag), $base_url)),
+                $current_excluded === 'not_excluded' ? ' class="current"' : '',
+                $count_not_excluded
+            );
+            return $views;
+        }
+
+        public function process_bulk_action() {
+            if ($this->current_action() !== 'delete') {
+                return;
+            }
+            check_admin_referer('bulk-logs');
+            $ids = isset($_POST['log_id']) ? (array)$_POST['log_id'] : array();
+            $this->deleted_count = CFG_Click_Fraud_Guard::delete_logs_by_ids($ids);
         }
     }
-
-    public function prepare_items() {
-        $per_page = 10;
-        $current_page = $this->get_pagenum();
-        $this->excluded_filter = isset($_GET['excluded']) ? sanitize_text_field(wp_unslash($_GET['excluded'])) : 'all';
-        if (!in_array($this->excluded_filter, array('all', 'excluded', 'not_excluded'), true)) {
-            $this->excluded_filter = 'all';
-        }
-        $this->flag_filter = isset($_GET['flagged']) ? sanitize_text_field(wp_unslash($_GET['flagged'])) : 'all';
-        if (!in_array($this->flag_filter, array('all', 'flagged', 'not_flagged'), true)) {
-            $this->flag_filter = 'all';
-        }
-        $settings = CFG_Click_Fraud_Guard::get_settings();
-        $this->repeat_threshold = max(1, (int)$settings['repeat_threshold']);
-        $total_items = CFG_Click_Fraud_Guard::get_logs_count($this->excluded_filter, $this->flag_filter, $this->repeat_threshold);
-
-        $this->set_pagination_args(array(
-            'total_items' => $total_items,
-            'per_page' => $per_page,
-        ));
-
-        $this->_column_headers = array($this->get_columns(), array(), array());
-        $this->items = CFG_Click_Fraud_Guard::get_logs($per_page, ($current_page - 1) * $per_page, $this->excluded_filter, $this->flag_filter, $this->repeat_threshold);
-        $ips = array();
-        foreach ($this->items as $item) {
-            $ips[] = $item->ip;
-        }
-        $this->excluded_map = CFG_Click_Fraud_Guard::get_excluded_map($ips);
-    }
-
-    protected function get_views() {
-        $current_excluded = $this->excluded_filter;
-        $current_flag = $this->flag_filter;
-        $base_url = admin_url('admin.php?page=click-fraud-guard-logs');
-        $views = array();
-
-        $count_all = CFG_Click_Fraud_Guard::get_logs_count('all', 'all', $this->repeat_threshold);
-        $count_excluded = CFG_Click_Fraud_Guard::get_logs_count('excluded', $current_flag, $this->repeat_threshold);
-        $count_not_excluded = CFG_Click_Fraud_Guard::get_logs_count('not_excluded', $current_flag, $this->repeat_threshold);
-        $count_flagged = CFG_Click_Fraud_Guard::get_logs_count($current_excluded, 'flagged', $this->repeat_threshold);
-        $count_not_flagged = CFG_Click_Fraud_Guard::get_logs_count($current_excluded, 'not_flagged', $this->repeat_threshold);
-
-        $views['all'] = sprintf(
-            '<a href="%s"%s>All <span class="count">(%d)</span></a>',
-            esc_url($base_url),
-            ($current_excluded === 'all' && $current_flag === 'all') ? ' class="current"' : '',
-            $count_all
-        );
-        $views['flagged'] = sprintf(
-            '<a href="%s"%s>Flagged <span class="count">(%d)</span></a>',
-            esc_url(add_query_arg(array('flagged' => 'flagged', 'excluded' => $current_excluded), $base_url)),
-            $current_flag === 'flagged' ? ' class="current"' : '',
-            $count_flagged
-        );
-        $views['not_flagged'] = sprintf(
-            '<a href="%s"%s>Not Flagged <span class="count">(%d)</span></a>',
-            esc_url(add_query_arg(array('flagged' => 'not_flagged', 'excluded' => $current_excluded), $base_url)),
-            $current_flag === 'not_flagged' ? ' class="current"' : '',
-            $count_not_flagged
-        );
-        $views['excluded'] = sprintf(
-            '<a href="%s"%s>Excluded <span class="count">(%d)</span></a>',
-            esc_url(add_query_arg(array('excluded' => 'excluded', 'flagged' => $current_flag), $base_url)),
-            $current_excluded === 'excluded' ? ' class="current"' : '',
-            $count_excluded
-        );
-        $views['not_excluded'] = sprintf(
-            '<a href="%s"%s>Not Excluded <span class="count">(%d)</span></a>',
-            esc_url(add_query_arg(array('excluded' => 'not_excluded', 'flagged' => $current_flag), $base_url)),
-            $current_excluded === 'not_excluded' ? ' class="current"' : '',
-            $count_not_excluded
-        );
-        return $views;
-    }
-
-    public function process_bulk_action() {
-        if ($this->current_action() !== 'delete') {
-            return;
-        }
-        check_admin_referer('bulk-logs');
-        $ids = isset($_POST['log_id']) ? (array)$_POST['log_id'] : array();
-        $this->deleted_count = CFG_Click_Fraud_Guard::delete_logs_by_ids($ids);
-    }
-}
 }
 
 CFG_Click_Fraud_Guard::init();
