@@ -19,4 +19,15 @@
         }
     }
     document.addEventListener('click', onCopyClick);
+
+    function onHelpToggle(e) {
+        var btn = e.target.closest('.cfg-help-toggle');
+        if (!btn) return;
+        e.preventDefault();
+        var helpLink = document.getElementById('contextual-help-link');
+        if (helpLink) {
+            helpLink.click();
+        }
+    }
+    document.addEventListener('click', onHelpToggle);
 })();

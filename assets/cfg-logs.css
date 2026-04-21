@@ -56,3 +56,25 @@
 .wp-list-table .column-exclude_action {
     width: 80px;
 }
+
+.cfg-page-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cfg-help-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0 !important;
+}
+
+.cfg-help-toggle .dashicons {
+    line-height: 1;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+}

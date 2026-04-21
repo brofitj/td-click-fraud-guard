@@ -26,6 +26,9 @@ class CFG_Click_Fraud_Guard {
         add_action('admin_init', array(__CLASS__, 'register_settings'));
         add_action('admin_init', array(__CLASS__, 'ensure_list_table'));
         add_action('current_screen', array(__CLASS__, 'add_logs_help_tabs'));
+        add_action('wp_enqueue_scripts', array(__CLASS__, 'enqueue_front_assets'));
+        add_action('wp_ajax_cfg_log_click', array(__CLASS__, 'handle_js_log'));
+        add_action('wp_ajax_nopriv_cfg_log_click', array(__CLASS__, 'handle_js_log'));
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_admin_assets'));
         add_action('admin_post_cfg_toggle_excluded', array(__CLASS__, 'handle_toggle_excluded'));
         add_action(self::CRON_HOOK, array(__CLASS__, 'cleanup_logs'));
@@ -108,32 +111,45 @@ class CFG_Click_Fraud_Guard {
     }
 
     public static function maybe_log_click() {
-        if (is_admin() || wp_doing_cron() || (defined('REST_REQUEST') && REST_REQUEST)) {
+        // Logging now handled via JS ping to keep page cache effective.
+        return;
+    }
+
+    public static function enqueue_front_assets() {
+        if (is_admin()) {
             return;
         }
-        if (defined('DOING_AJAX') && DOING_AJAX) {
-            return;
+        $base = plugin_dir_url(__FILE__);
+        wp_enqueue_script('cfg-front', $base . 'assets/cfg-front.js', array(), '1.0.0', true);
+        wp_localize_script('cfg-front', 'CFG_LOG', array(
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('cfg_log_click'),
+        ));
+    }
+
+    public static function handle_js_log() {
+        $nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
+        if (!empty($nonce) && !wp_verify_nonce($nonce, 'cfg_log_click')) {
+            wp_send_json_error('invalid_nonce', 403);
         }
+
         if (is_user_logged_in() && current_user_can('manage_options')) {
-            return;
+            wp_send_json_success('skipped_admin');
         }
-        $uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '';
-        if ($uri !== '' && strpos($uri, '/wp-admin/') === 0) {
-            return;
+
+        $gclid = isset($_POST['gclid']) ? sanitize_text_field(wp_unslash($_POST['gclid'])) : '';
+        if ($gclid === '') {
+            wp_send_json_error('missing_gclid', 400);
         }
 
         $settings = self::get_settings();
-
         $ip = self::get_ip();
         if (empty($ip)) {
-            return;
+            wp_send_json_error('missing_ip', 400);
         }
-
-        $gclid = isset($_GET['gclid']) ? sanitize_text_field(wp_unslash($_GET['gclid'])) : '';
 
         $country = self::get_country($settings);
         $reasons = array();
-
         if (!empty($country)) {
             $blocked = self::parse_country_list($settings['blocked_countries']);
             if (!empty($blocked) && in_array($country, $blocked, true)) {
@@ -153,9 +169,9 @@ class CFG_Click_Fraud_Guard {
             'last_seen' => $now_gmt,
             'ip' => $ip,
             'user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? wp_unslash($_SERVER['HTTP_USER_AGENT']) : '',
-            'referrer' => isset($_SERVER['HTTP_REFERER']) ? wp_unslash($_SERVER['HTTP_REFERER']) : '',
+            'referrer' => isset($_POST['referrer']) ? wp_unslash($_POST['referrer']) : '',
             'gclid' => $gclid,
-            'landing_url' => self::current_url(),
+            'landing_url' => isset($_POST['url']) ? esc_url_raw(wp_unslash($_POST['url'])) : '',
             'country' => $country,
             'is_flagged' => $is_flagged ? 1 : 0,
             'flag_reason' => $is_flagged ? implode(',', $reasons) : '',
@@ -164,7 +180,7 @@ class CFG_Click_Fraud_Guard {
         );
 
         self::upsert_log($data, $settings);
-
+        wp_send_json_success('logged');
     }
 
     private static function insert_log($data) {
@@ -423,7 +439,7 @@ class CFG_Click_Fraud_Guard {
         $toggled = isset($_GET['cfg_excluded_updated']) ? (int)$_GET['cfg_excluded_updated'] : 0;
         ?>
         <div class="wrap">
-            <h1>Click Fraud Guard Logs</h1>
+            <h1 class="cfg-page-title">Click Fraud Guard Logs <button type="button" class="cfg-help-toggle button-link" aria-label="Help"><span class="dashicons dashicons-editor-help" aria-hidden="true"></span></button></h1>
             <?php if ($toggled) : ?>
                 <div class="notice notice-success is-dismissible">
                     <p>Status exclude berhasil diperbarui.</p>
@@ -462,6 +478,12 @@ class CFG_Click_Fraud_Guard {
             'id' => 'cfg_logs_help_timezone',
             'title' => 'Zona Waktu',
             'content' => '<p>Zona waktu yang digunakan adalah <strong>WIB (Asia/Jakarta)</strong>.</p>',
+        ));
+        $screen->add_help_tab(array(
+            'id' => 'cfg_logs_help_js',
+            'title' => 'Logging via JS',
+            'content' => '<p>Logging dilakukan melalui JavaScript agar halaman tetap dapat di-cache. Saat URL mengandung <code>gclid</code>, browser akan mengirim ping ke server untuk menambah log.</p>'
+                . '<p>Jika JavaScript diblokir atau request ke <code>admin-ajax.php</code> dibatasi, log bisa tidak tercatat.</p>',
         ));
         $screen->set_help_sidebar('<p><strong>Butuh bantuan?</strong></p><p>Periksa pengaturan Threshold dan Window untuk menyesuaikan indikator bendera merah.</p>');
     }
